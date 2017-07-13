@@ -13,10 +13,14 @@ echo "DFU uImage"
 dfu-util -D arch/arm/boot/uImage -a 0
 
 echo "------------------------------"
-echo "DFU exynos4412-tiny4412.dtb"
-dfu-util -D arch/arm/boot/dts/exynos4412-tiny4412.dtb -a 1
+echo "DFU ramdisk"
+dfu-util -D /opt/rootfs/ramdisk.img -a 1
 
 echo "------------------------------"
-echo "over"
+echo "DFU exynos4412-tiny4412.dtb"
+dfu-util -D arch/arm/boot/dts/exynos4412-tiny4412.dtb -a 2
+
+echo "------------------------------"
+echo "done!"
 
 
