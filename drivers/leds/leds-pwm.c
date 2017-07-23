@@ -39,9 +39,7 @@ struct led_pwm_priv {
 static void __led_pwm_set(struct led_pwm_data *led_dat)
 {
 	int new_duty = led_dat->duty;
-
 	pwm_config(led_dat->pwm, new_duty, led_dat->period);
-
 	if (new_duty == 0)
 		pwm_disable(led_dat->pwm);
 	else
@@ -94,7 +92,6 @@ static int led_pwm_add(struct device *dev, struct led_pwm_priv *priv,
 	led_data->cdev.brightness = LED_OFF;
 	led_data->cdev.max_brightness = led->max_brightness;
 	led_data->cdev.flags = LED_CORE_SUSPENDRESUME;
-
 	if (child)
 		led_data->pwm = devm_of_pwm_get(dev, child, NULL);
 	else
@@ -149,7 +146,6 @@ static int led_pwm_create_of(struct device *dev, struct led_pwm_priv *priv)
 		led.active_low = of_property_read_bool(child, "active-low");
 		of_property_read_u32(child, "max-brightness",
 				     &led.max_brightness);
-
 		ret = led_pwm_add(dev, priv, &led, child);
 		if (ret) {
 			of_node_put(child);
@@ -171,10 +167,9 @@ static int led_pwm_probe(struct platform_device *pdev)
 		count = pdata->num_leds;
 	else
 		count = of_get_child_count(pdev->dev.of_node);
-
 	if (!count)
 		return -EINVAL;
-
+	
 	priv = devm_kzalloc(&pdev->dev, sizeof_pwm_leds_priv(count),
 			    GFP_KERNEL);
 	if (!priv)

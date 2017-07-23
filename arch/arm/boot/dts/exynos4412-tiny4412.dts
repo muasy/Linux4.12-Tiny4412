@@ -69,6 +69,19 @@
 			clock-frequency = <24000000>;
 		};
 	};
+
+	beep {
+		compatible = "pwm-leds";
+		
+		beep1 {
+			label = "beep"; 
+			linux,default-trigger = "beep";
+			max-brightness = <1000000000>;
+			pwms = <&pwm 0 100000000 0>;
+		};
+	};
+	
+
 };
 
 &rtc {
@@ -112,4 +125,13 @@
 	bus-width = <8>;
 	cap-mmc-highspeed;
 };
+
+&pwm {
+	samsung,pwm-outputs = <0>, <1>;
+	pinctrl-0 = <&pwm0_out &pwm1_out>;
+	pinctrl-names = "default";
+	status = "okay";	
+};
+
+
 

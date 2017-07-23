@@ -100,7 +100,6 @@ static DEVICE_ATTR(inverted, 0644, bl_trig_invert_show, bl_trig_invert_store);
 static void bl_trig_activate(struct led_classdev *led)
 {
 	int ret;
-
 	struct bl_trig_notifier *n;
 
 	n = kzalloc(sizeof(struct bl_trig_notifier), GFP_KERNEL);

@@ -517,7 +517,6 @@ static int pwm_samsung_probe(struct platform_device *pdev)
 	chip->chip.base = -1;
 	chip->chip.npwm = SAMSUNG_PWM_NUM;
 	chip->inverter_mask = BIT(SAMSUNG_PWM_NUM) - 1;
-
 	if (IS_ENABLED(CONFIG_OF) && pdev->dev.of_node) {
 		ret = pwm_samsung_parse_dt(chip);
 		if (ret)

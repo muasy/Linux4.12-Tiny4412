@@ -136,7 +136,6 @@ struct pwm_device *
 of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
 {
 	struct pwm_device *pwm;
-
 	/* check, whether the driver supports a third cell for flags */
 	if (pc->of_pwm_n_cells < 3)
 		return ERR_PTR(-EINVAL);
@@ -166,7 +165,7 @@ static struct pwm_device *
 of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *args)
 {
 	struct pwm_device *pwm;
-
+	
 	/* sanity check driver support */
 	if (pc->of_pwm_n_cells < 2)
 		return ERR_PTR(-EINVAL);
@@ -662,7 +661,7 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
 	struct pwm_chip *pc;
 	int index = 0;
 	int err;
-
+	
 	if (con_id) {
 		index = of_property_match_string(np, "pwm-names", con_id);
 		if (index < 0)
@@ -700,7 +699,7 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
 	}
 
 	pwm->label = con_id;
-
+	
 put:
 	of_node_put(args.np);
 
