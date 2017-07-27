@@ -76,8 +76,8 @@
 		beep1 {
 			label = "beep"; 
 			linux,default-trigger = "beep";
-			max-brightness = <1000000000>;
-			pwms = <&pwm 0 100000000 0>;
+			max-brightness = <0xff>;
+			pwms = <&pwm 0 1000000000 0>;
 		};
 	};
 	
