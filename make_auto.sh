@@ -6,6 +6,7 @@
 
 echo "------------------------------"
 echo "make"
+# All DEBUG(KCFLAGS=-DDEBUG)
 make ARCH=arm uImage LOADADDR=0X40008000 -j4
 
 echo "------------------------------"

@@ -145,23 +145,18 @@
 &ehci {
 	status = "okay";
 	port@0 {
-			status = "okay";
-		};
+		status = "okay";
+	};
 	port@1 {
-			status = "okay";
-		};
+		status = "okay";
+	};
 	port@2 {
-			status = "okay";
-		};
-};
-
-&ohci {
-	status = "okay";
-	port@0 {
 		status = "okay";
 	};
 };
 
+
 &hsotg {
 	status = "okay";
 };
+

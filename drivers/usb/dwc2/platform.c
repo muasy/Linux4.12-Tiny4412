@@ -210,7 +210,6 @@ int dwc2_lowlevel_hw_disable(struct dwc2_hsotg *hsotg)
 static int dwc2_lowlevel_hw_init(struct dwc2_hsotg *hsotg)
 {
 	int i, ret;
-
 	hsotg->reset = devm_reset_control_get_optional(hsotg->dev, "dwc2");
 	if (IS_ERR(hsotg->reset)) {
 		ret = PTR_ERR(hsotg->reset);
@@ -358,7 +357,7 @@ static int dwc2_driver_probe(struct platform_device *dev)
 	struct dwc2_hsotg *hsotg;
 	struct resource *res;
 	int retval;
-
+	
 	hsotg = devm_kzalloc(&dev->dev, sizeof(*hsotg), GFP_KERNEL);
 	if (!hsotg)
 		return -ENOMEM;

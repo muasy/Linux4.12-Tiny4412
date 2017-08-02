@@ -12,7 +12,7 @@ cp arch/arm/boot/uImage $TFTP_PATH
 
 echo "------------------------------"
 echo "TFTP ramdisk"
-cp /opt//fs/rootfs/ramdisk.img $TFTP_PATH
+cp /opt/fs/rootfs/ramdisk.img $TFTP_PATH
 
 echo "------------------------------"
 echo "TFTP exynos4412-tiny4412.dtb"
