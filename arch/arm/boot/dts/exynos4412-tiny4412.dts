@@ -14,7 +14,6 @@
 /dts-v1/;
 #include "exynos4412.dtsi"
 #include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/pwm/pwm.h>
 
 / {
 	model = "FriendlyARM TINY4412 board based on Exynos4412";
