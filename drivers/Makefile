@@ -181,3 +181,9 @@ obj-$(CONFIG_NVMEM)		+= nvmem/
 obj-$(CONFIG_FPGA)		+= fpga/
 obj-$(CONFIG_FSI)		+= fsi/
 obj-$(CONFIG_TEE)		+= tee/
+
+
+# tiny4412
+obj-$(CONFIG_TINY4412_BSP)  += tiny4412/
+
+

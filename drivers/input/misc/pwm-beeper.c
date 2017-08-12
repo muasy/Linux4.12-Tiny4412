@@ -41,7 +41,7 @@ static int pwm_beeper_on(struct pwm_beeper *beeper, unsigned long period)
 {
 	struct pwm_state state;
 	int error;
-
+	
 	pwm_get_state(beeper->pwm, &state);
 
 	state.enabled = true;
@@ -135,7 +135,7 @@ static int pwm_beeper_probe(struct platform_device *pdev)
 	struct pwm_state state;
 	u32 bell_frequency;
 	int error;
-
+	
 	beeper = devm_kzalloc(dev, sizeof(*beeper), GFP_KERNEL);
 	if (!beeper)
 		return -ENOMEM;

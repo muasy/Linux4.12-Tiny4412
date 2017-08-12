@@ -1,0 +1,16 @@
+menuconfig TINY4412_BSP
+	bool "TINY4412 BSP Support"
+	help
+		Select [Y] to enable tiny4412 driver.
+
+if TINY4412_BSP
+
+	config BSP_HELLO_WORLD
+		tristate "HELLO WORLD Support"
+		help 
+			This option enables hello_world in /tiny4412/hello_world.c.
+			You'll need this to open hello_world driver. 
+			It can be built as a module.
+
+
+endif # TINY4412_BSP

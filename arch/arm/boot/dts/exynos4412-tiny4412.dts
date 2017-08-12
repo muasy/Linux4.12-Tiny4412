@@ -14,6 +14,7 @@
 /dts-v1/;
 #include "exynos4412.dtsi"
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
 
 / {
 	model = "FriendlyARM TINY4412 board based on Exynos4412";
@@ -70,23 +71,48 @@
 		};
 	};
 
-	beep {
-		compatible = "pwm-leds";
-		
-		beep1 {
-			label = "beep"; 
-			linux,default-trigger = "beep";
-			max-brightness = <0xff>;
-			pwms = <&pwm 0 1000000000 0>;
-		};
-	};
-	
 	usb-hub { 
 		compatible = "smsc,usb4604";
 		reset-gpios = <&gpm2 4 GPIO_ACTIVE_LOW>;
 		initial-mode = <1>; 
 		status = "okay";
-	}; 
+	};
+
+	lcd {
+		display-timings {
+			native-mode = <&timing0>;
+			timing0: timing {
+				clock-frequency = <160000000>;
+				hactive = <800>;
+				vactive = <480>;
+				hfront-porch = <64>;
+				hback-porch = <16>;
+				hsync-len = <48>;
+				vback-porch = <64>;
+				vfront-porch = <16>;
+				vsync-len = <3>;
+			};
+		};
+		
+		ports { 
+			#address-cells = <1>; 
+			#size-cells = <0>;
+		};
+	};
+
+	HelloWorld {
+		compatible = "tiny4412, hello_world";
+		status = "okay";
+		
+		device1 {
+			example = "hello_world";
+		};
+	};
+
+	buzzer {
+		compatible = "pwm-beeper";
+		pwms = <&pwm 0 1000000000 0>;
+	};
 };
 
 &rtc {
@@ -97,6 +123,7 @@
 	bus-width = <4>;
 	pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus4>;
 	pinctrl-names = "default";
+	cd-gpios = <&gpk2 2 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 
@@ -132,8 +159,8 @@
 };
 
 &pwm {
-	samsung,pwm-outputs = <0>, <1>;
-	pinctrl-0 = <&pwm0_out &pwm1_out>;
+	samsung,pwm-outputs = <0>;
+	pinctrl-0 = <&pwm0_out>;
 	pinctrl-names = "default";
 	status = "okay";	
 };
@@ -155,8 +182,15 @@
 	};
 };
 
-
 &hsotg {
 	status = "okay";
 };
+
+&fimd {
+	pinctrl-0 = <&lcd_clk &lcd_data24 &pwm1_out>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+
 
