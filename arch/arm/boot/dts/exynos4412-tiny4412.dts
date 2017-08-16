@@ -14,6 +14,7 @@
 /dts-v1/;
 #include "exynos4412.dtsi"
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
 
 / {
 	model = "FriendlyARM TINY4412 board based on Exynos4412";
@@ -112,6 +113,49 @@
 		compatible = "pwm-beeper";
 		pwms = <&pwm 0 1000000000 0>;
 	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+
+		key1 {
+			interrupt-parent = <&gpx3>;
+			interrupts = <2 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpx3 2 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_1>;
+			label = "key1";
+			debounce-interval = <10>;
+			wakeup-source;
+		};
+		key2 {
+			interrupt-parent = <&gpx3>;
+			interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpx3 3 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_2>;
+			label = "key2";
+			debounce-interval = <10>;
+			wakeup-source;
+		};
+		key3 {
+			interrupt-parent = <&gpx3>;
+			interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpx3 4 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_3>;
+			label = "key3";
+			debounce-interval = <10>;
+			wakeup-source;
+		};
+		key4 {
+			interrupt-parent = <&gpx3>;
+			interrupts = <5 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpx3 5 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_4>;
+			label = "key4";
+			debounce-interval = <10>;
+			wakeup-source;
+		};
+		
+	};
 };
 
 &rtc {
@@ -182,6 +226,7 @@
 };
 
 &hsotg {
+	dr_mode = "peripheral";
 	status = "okay";
 };
 
@@ -190,6 +235,4 @@
 	pinctrl-names = "default";
 	status = "okay";
 };
-
-
 

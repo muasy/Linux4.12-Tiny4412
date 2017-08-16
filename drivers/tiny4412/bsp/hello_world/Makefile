@@ -6,7 +6,7 @@
 TARGET      := hello_world
 obj-m       := $(TARGET).o
 CROSS       := arm-none-linux-gnueabi-
-KDIR        := /opt/fs/rootfs/rootfs/lib/modules/4.12.0-ge0f7e9e-dirty/build
+KDIR        := /opt/fs/rootfs/rootfs/lib/modules/4.12.0+/build
 PWD         := $(shell pwd)
 INSTALL_DIR := /opt/fs/rootfs/rootfs/
 

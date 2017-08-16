@@ -32,7 +32,7 @@ struct input_event {
 
 static void help(void)
 {
-	printf("Usage: ./app_beep <duty>");
+	printf("Usage: ./beep <duty>\n");
 }
 
 

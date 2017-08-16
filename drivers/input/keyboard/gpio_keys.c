@@ -428,7 +428,7 @@ static irqreturn_t gpio_keys_irq_isr(int irq, void *dev_id)
 	unsigned long flags;
 
 	BUG_ON(irq != bdata->irq);
-
+	
 	spin_lock_irqsave(&bdata->lock, flags);
 
 	if (!bdata->key_pressed) {
@@ -627,7 +627,7 @@ static int gpio_keys_open(struct input_dev *input)
 	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
 	const struct gpio_keys_platform_data *pdata = ddata->pdata;
 	int error;
-
+	
 	if (pdata->enable) {
 		error = pdata->enable(input->dev.parent);
 		if (error)
