@@ -43,19 +43,21 @@
 			label = "led2";
 			gpios = <&gpm4 1 GPIO_ACTIVE_LOW>;
 			default-state = "off";
+			linux,default-trigger = "mmc0";
 		};
 
 		led3 {
 			label = "led3";
 			gpios = <&gpm4 2 GPIO_ACTIVE_LOW>;
 			default-state = "off";
+			linux,default-trigger = "mmc1";
 		};
 
 		led4 {
 			label = "led4";
 			gpios = <&gpm4 3 GPIO_ACTIVE_LOW>;
 			default-state = "off";
-			linux,default-trigger = "mmc0";
+			linux,default-trigger = "none";
 		};
 	};
 
@@ -153,9 +155,34 @@
 			label = "key4";
 			debounce-interval = <10>;
 			wakeup-source;
-		};
-		
+		};	
 	};
+
+	touch_screen@139D0000 {
+		compatible = "tiny4412, onewire_touchscreen";
+		reg = <0x139D0000 0x14>;
+		pinctrl-names = "backlight_in", "backlight_out";
+		pinctrl-0 = <&backlight_in>;
+		pinctrl-1 = <&backlight_out>;
+		gpios = <&gpx1 2 GPIO_ACTIVE_HIGH>;
+		clock-names = "timers";
+		clocks = <&clock CLK_PWM>;
+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+/*
+	backlight_demo@139D0000{
+                compatible         = "tiny4412,backlight_demo";
+                reg = <0x139D0000  0x14>;
+                tiny4412,backlight = <&gpx1 2 GPIO_ACTIVE_HIGH>;
+                pinctrl-names = "backlight_out","backlight_in";
+                pinctrl-0 = <&backlight_out>;
+                pinctrl-1 = <&backlight_in>;
+                interrupts = <0 40 0>;
+                clocks = <&clock CLK_PWM>;
+                clock-names = "timers";
+        };	
+*/
 };
 
 &rtc {
@@ -171,18 +198,6 @@
 };
 
 &serial_0 {
-	status = "okay";
-};
-
-&serial_1 {
-	status = "okay";
-};
-
-&serial_2 {
-	status = "okay";
-};
-
-&serial_3 {
 	status = "okay";
 };
 
@@ -205,7 +220,7 @@
 	samsung,pwm-outputs = <0>;
 	pinctrl-0 = <&pwm0_out>;
 	pinctrl-names = "default";
-	status = "okay";	
+	status = "disabled";	
 };
 
 &exynos_usbphy {
@@ -226,13 +241,47 @@
 };
 
 &hsotg {
-	dr_mode = "peripheral";
 	status = "okay";
 };
 
 &fimd {
 	pinctrl-0 = <&lcd_clk &lcd_data24 &pwm1_out>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
+
+/*
+&pinctrl_1 {
+	backlight_out: backlight_out {
+		samsung,pins = "gpx1-2";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS4_PIN_DRV_LV1>;
+	};
+
+	backlight_in: backlight_in {
+		samsung,pins = "gpx1-2";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_INPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS4_PIN_DRV_LV1>;
+	};
+	
+};
+*/
+
+&pinctrl_1 {
+        backlight_out: backlight_out{
+                samsung,pins = "gpx1-2";
+                samsung,pin-function = <1>;
+                samsung,pin-pud = <0>;
+                samsung,pin-drv = <0>;
+        };
+         backlight_in: backlight_in{
+                samsung,pins = "gpx1-2";
+                samsung,pin-function = <0>;
+                samsung,pin-pud = <0>;
+                samsung,pin-drv = <0>;
+        };
+};
+
 

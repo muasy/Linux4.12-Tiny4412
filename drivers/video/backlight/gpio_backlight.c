@@ -91,7 +91,7 @@ static int gpio_backlight_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	unsigned long flags = GPIOF_DIR_OUT;
 	int ret;
-
+	
 	if (!pdata && !np) {
 		dev_err(&pdev->dev,
 			"failed to find platform data or device tree node.\n");

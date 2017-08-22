@@ -37,6 +37,7 @@
  * This file contains the core HCD code, and implements the Linux hc_driver
  * API
  */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/spinlock.h>
@@ -4324,7 +4325,7 @@ static int _dwc2_hcd_start(struct usb_hcd *hcd)
 	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
 	struct usb_bus *bus = hcd_to_bus(hcd);
 	unsigned long flags;
-
+	
 	dev_dbg(hsotg->dev, "DWC OTG HCD START\n");
 
 	spin_lock_irqsave(&hsotg->lock, flags);
