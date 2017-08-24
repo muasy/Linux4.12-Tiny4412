@@ -538,7 +538,7 @@ static int pwm_samsung_probe(struct platform_device *pdev)
 	chip->base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(chip->base))
 		return PTR_ERR(chip->base);
-
+	
 	chip->base_clk = devm_clk_get(&pdev->dev, "timers");
 	if (IS_ERR(chip->base_clk)) {
 		dev_err(dev, "failed to get timer base clk\n");

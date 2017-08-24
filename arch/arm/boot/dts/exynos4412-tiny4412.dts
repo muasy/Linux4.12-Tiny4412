@@ -158,9 +158,9 @@
 		};	
 	};
 
-	touch_screen@139D0000 {
-		compatible = "tiny4412, onewire_touchscreen";
-		reg = <0x139D0000 0x14>;
+	backlight {
+		compatible = "tiny4412, onewire_backlight";
+		reg = <0x139D0000 0x1000>;
 		pinctrl-names = "backlight_in", "backlight_out";
 		pinctrl-0 = <&backlight_in>;
 		pinctrl-1 = <&backlight_out>;
@@ -168,21 +168,8 @@
 		clock-names = "timers";
 		clocks = <&clock CLK_PWM>;
 		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		pwms = <&pwm 0 1000000000 0>;
 	};
-
-/*
-	backlight_demo@139D0000{
-                compatible         = "tiny4412,backlight_demo";
-                reg = <0x139D0000  0x14>;
-                tiny4412,backlight = <&gpx1 2 GPIO_ACTIVE_HIGH>;
-                pinctrl-names = "backlight_out","backlight_in";
-                pinctrl-0 = <&backlight_out>;
-                pinctrl-1 = <&backlight_in>;
-                interrupts = <0 40 0>;
-                clocks = <&clock CLK_PWM>;
-                clock-names = "timers";
-        };	
-*/
 };
 
 &rtc {
@@ -220,7 +207,7 @@
 	samsung,pwm-outputs = <0>;
 	pinctrl-0 = <&pwm0_out>;
 	pinctrl-names = "default";
-	status = "disabled";	
+	status = "okay";	
 };
 
 &exynos_usbphy {
@@ -250,7 +237,6 @@
 	status = "disabled";
 };
 
-/*
 &pinctrl_1 {
 	backlight_out: backlight_out {
 		samsung,pins = "gpx1-2";
@@ -267,21 +253,6 @@
 	};
 	
 };
-*/
 
-&pinctrl_1 {
-        backlight_out: backlight_out{
-                samsung,pins = "gpx1-2";
-                samsung,pin-function = <1>;
-                samsung,pin-pud = <0>;
-                samsung,pin-drv = <0>;
-        };
-         backlight_in: backlight_in{
-                samsung,pins = "gpx1-2";
-                samsung,pin-function = <0>;
-                samsung,pin-pud = <0>;
-                samsung,pin-drv = <0>;
-        };
-};
 
 

@@ -26,7 +26,7 @@
  * the CRC-8 functions is based on web page from http://lfh1986.blogspot.com
  */
 
-#define DEBUG
+ #define DEBUG 
 
 #include <linux/errno.h>
 #include <linux/kernel.h>
@@ -50,7 +50,6 @@
 #include <asm/uaccess.h>
 
 #include <linux/cdev.h>
-
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
@@ -58,14 +57,11 @@
 #include <linux/io.h>
 
 #include <asm/mach-types.h>
-
 #include <asm/irq.h>
 #include <asm/mach/time.h>
 #include <linux/of_gpio.h>
+#include <linux/pwm.h>
 
-
-#define TOUCH_DEVICE_NAME		"touchscreen-1wire"
-#define BACKLIGHT_DEVICE_NAME	"backlight-1wire"
 
 #define SAMPLE_BPS 9600
 
@@ -315,6 +311,25 @@ static irqreturn_t timer_for_1wire_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+struct samsung_pwm_variant {
+	u8 bits;
+	u8 div_base;
+	u8 tclk_mask;
+	u8 output_mask;
+	bool has_tint_cstat;
+};
+
+struct samsung_pwm_chip {
+	struct pwm_chip chip;
+	struct samsung_pwm_variant variant;
+	u8 inverter_mask;
+
+	void __iomem *base;
+	struct clk *base_clk;
+	struct clk *tclk0;
+	struct clk *tclk1;
+};
+
 static int ts_1wire_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -323,11 +338,11 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	struct clk *timer_clk;
 	dev_t devid;
 	
-	dev_dbg(dev, "---------------- start!\n");	
+	dev_err(dev, "start.");	
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv) {
-		dev_dbg(dev, "calloc mem error!\n");
+		dev_err(dev, "calloc mem error!\n");
 		return -ENOMEM;
 	}
 	this = priv;
@@ -335,81 +350,99 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	/* pinctrl */
 	priv->pctrl = devm_pinctrl_get(dev);	
 	if (IS_ERR(priv->pctrl)) {
-		dev_dbg(dev, "get pinctrl error!\n");
+		dev_err(dev, "get pinctrl error!\n");
 		return -EINVAL;
 	}
 
 	priv->pstate_in = pinctrl_lookup_state(priv->pctrl, "backlight_in");
 	if (IS_ERR(priv->pstate_in)) {
-		dev_dbg(dev, "backlight_in not found!\n");
+		dev_err(dev, "backlight_in not found!\n");
 		return -EINVAL;
 	}
 	
 	priv->pstate_out = pinctrl_lookup_state(priv->pctrl, "backlight_out");
 	if (IS_ERR(priv->pstate_out)) {
-		dev_dbg(dev, "backlight_out not found!\n");
+		dev_err(dev, "backlight_out not found!\n");
 		return -EINVAL;
 	}
 
 	/* Get clk */
 	timer_clk = devm_clk_get(dev, "timers");
 	if (IS_ERR(timer_clk)) {
-		dev_dbg(dev, "devm_clk_get error!\n");
+		dev_err(dev, "devm_clk_get error!\n");
 		return -EINVAL;
 	}
 	
 	/* Enable clk */
 	ret = clk_prepare_enable(timer_clk);
 	if (ret) {
-		dev_dbg(dev, "clk_prepare_enable error!\n");
+		dev_err(dev, "clk_prepare_enable error!\n");
 		return -EINVAL;
 	}
 
 	/* Get gpios */
 	priv->gpio_write = of_get_named_gpio(dev->of_node, "gpios", 0);	
 	if (!gpio_is_valid(priv->gpio_write)) {
-		dev_dbg(dev, "gpios not found!\n");
+		dev_err(dev, "gpios not found!\n");
 		return -EINVAL;
 	}
 	
 	/* Request gpios */
 	ret = devm_gpio_request_one(dev, priv->gpio_write, GPIOF_OUT_INIT_HIGH, "one_wire");
 	if (ret) {
-		dev_dbg(dev, "request gpio error!\n");
+		dev_err(dev, "request gpio error!\n");
 		return -EINVAL;
 	}
 
+{
+	/* io资源在samsung pwm中已申请 */
+#if 0
 	/* Get res */
 	priv->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!priv->res) {
-		dev_dbg(dev, "get res error!\n");
+		dev_err(dev, "get res error!\n");
 		return -EINVAL;
 	}
-	dev_dbg(dev, "start=%x, end=%x name=%s\n", priv->res->start, priv->res->end, priv->res->name);
+	dev_err(dev, "start=%x, end=%x name=%s\n", priv->res->start, priv->res->end, priv->res->name);
 	
 	/* Get ioremap */
 	priv->pwm = (volatile struct pwm_base *)devm_ioremap_resource(dev, priv->res);
 	if (IS_ERR((struct pwm_base *)priv->pwm)) {
-		dev_dbg(dev, "devm_ioremap_resource error!\n");
+		dev_err(dev, "devm_ioremap_resource error!\n");
 		return -EINVAL;
 	}
+#endif
 
+	struct samsung_pwm_chip *chip;
+	struct pwm_device *pwm;
+	
+	pwm = devm_pwm_get(dev, NULL);
+	if (IS_ERR(pwm)) {
+		return -EINVAL;
+
+	}
+	devm_pwm_put(dev, pwm);
+	
+	chip = (struct samsung_pwm_chip *)pwm->chip;
+	priv->pwm = (volatile struct pwm_base *)chip->base;
+	if (IS_ERR((struct pwm_base *)priv->pwm)) {
+		return -EINVAL;
+	}
+}
 	/* Timer 3 */
 	priv->pwm->TCFG0 |=  (0xf << 8);
 	priv->pwm->TCFG1 &= ~(0xf << 12);
-	dev_dbg(dev, "TCFG0 %08x\n", priv->pwm->TCFG0);
-	dev_dbg(dev, "TCFG1 %08x\n", priv->pwm->TCFG1);
 
 	/* irq */
 	priv->irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!priv->irq) {
-		dev_dbg(dev, "get irq error!\n");
+		dev_err(dev, "get irq error!\n");
 		return -EINVAL;
 	}
 	
 	ret = devm_request_irq(dev, priv->irq->start, timer_for_1wire_interrupt , IRQF_TIMER, "backlight", NULL);
 	if (ret) {
-		dev_dbg(dev, "devm_request_irq error!\n");
+		dev_err(dev, "devm_request_irq error!\n");
 		return -EINVAL;
 	}
 
@@ -418,7 +451,7 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	/* char device */
 	ret = alloc_chrdev_region(&devid, 0, 1, "backlight");
 	if (ret) {
-		dev_dbg(dev, "alloc_chrdev_region error!\n");
+		dev_err(dev, "alloc_chrdev_region error!\n");
 		return -EINVAL;
 	}
 	priv->major = MAJOR(devid);		
@@ -430,8 +463,6 @@ static int ts_1wire_probe(struct platform_device *pdev)
     device_create(priv->one_wire_class, NULL, MKDEV(priv->major, 0), NULL, "backlight_1wire");
 
 	platform_set_drvdata(pdev, priv);		
-
-	dev_dbg(dev, "---------------- done!\n");	
 
 	return 0;
 }
@@ -448,87 +479,14 @@ static int ts_1wire_remove(struct platform_device *pdev)
 	devm_pinctrl_put(priv->pctrl);
 	devm_gpio_free(dev, priv->gpio_write);
 
-	devm_kfree(dev, priv);
 	this = NULL;
 
 	return 0;
 }
 
-#ifdef CONFIG_PM
-static int ts_1wire_suspend(struct device *dev)
-{
-#if 0
-	struct platform_device *pdev = to_platform_device(dev);
-	struct tiny4412_1wire_data *priv = dev_get_drvdata(dev);	
-
-	printk("ts_1wire_suspend: before \n");
-
-	del_timer_sync(&priv->timer);
-	disable_irq(IRQ_TIMER3);
-	gpio_free(GPIO_1WIRE);
-
-	printk("ts_1wire_suspend: ok \n");
-#endif
-
-	return 0;
-}
-
-static int ts_1wire_resume(struct device *dev)
-{
-#if 0
-	int ret;
-	struct platform_device *pdev = to_platform_device(dev);
-	struct tiny4412_1wire_data *priv = dev_get_drvdata(dev);	
-
-	printk("ts_1wire_resume: \n");
-
-	err_i = 0;
-
-	ret = gpio_request(GPIO_1WIRE, "GPX1_2");
-	if (ret) {
-		printk(KERN_ERR "failed to request GPIO for one-wire control\n");
-	}
-
-	gpio_direction_output(GPIO_1WIRE, 1);
-	gpio_set_value(GPIO_1WIRE, 1);
-	set_pin_up();
-
-	lcd_type = 0;
-	backlight_req = 0;
-	backlight_init_success = 0;
-	one_wire_status = IDLE;
-	io_bit_count = 0;
-	io_data = 0;
-	one_wire_request = 0;
-	resumed = 1;
-
-	ret = init_timer_for_1wire();
-	init_timer(&priv->timer);
-	one_wire_timer_proc(0);
-
-	enable_irq(IRQ_TIMER3);
-
-	/* enable TINT */
-	{
-		unsigned int tint;
-		tint = __raw_readl(S3C64XX_TINT_CSTAT);
-		tint |= 0x108;
-		__raw_writel(tint, S3C64XX_TINT_CSTAT);
-	}
-#endif
-	return 0;
-}
-
-static const struct dev_pm_ops ts_1wire_pm_ops = {
-	.suspend	= ts_1wire_suspend,
-	.resume		= ts_1wire_resume,
-};
-#endif
-
-
-
 static const struct of_device_id ts_1wire_of_match[] = {
 	{ .compatible = "tiny4412, onewire_touchscreen" },
+	{ .compatible = "tiny4412, onewire_backlight" },
 	{ },
 };
 
@@ -538,17 +496,14 @@ static struct platform_driver ts_1wire_device_driver = {
 	.driver				= {
 		.name			= "tiny4412_1wire",
 		.of_match_table = of_match_ptr(ts_1wire_of_match),
-	#ifdef CONFIG_PM
-	#endif
 	},
 };
 
 module_platform_driver(ts_1wire_device_driver);
 
 
-
-
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("SY <1530454315@qq.com>");
 MODULE_DESCRIPTION("Tiny4412 one-wire host and Touch Screen Driver");
+
 
