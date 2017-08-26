@@ -62,7 +62,6 @@
 #include <linux/of_gpio.h>
 #include <linux/pwm.h>
 
-
 #define SAMPLE_BPS 9600
 
 #define SLOW_LOOP_FEQ 25
@@ -159,6 +158,7 @@ struct tiny4412_1wire_data {
 	int major;
 	struct cdev one_wire_cdev;
 	struct class *one_wire_class;
+	struct clk *timer_clk;
 };
 
 
@@ -167,6 +167,7 @@ static struct tiny4412_1wire_data *this = NULL;
 static void start_one_wire_session(unsigned char req)
 {
     unsigned int tcon;
+	unsigned long prescale;
 
 	if (!this) {
 		return;
@@ -187,7 +188,10 @@ static void start_one_wire_session(unsigned char req)
     
 	this->io_bit_count = 1;
     pinctrl_select_state(this->pctrl, this->pstate_out);
-    this->pwm->TCNTB3 = 650;
+    
+	//Each timer has its 32-bit down-counter
+	prescale = (this->pwm->TCFG0 >> 8) & 0xFF;
+	this->pwm->TCNTB3 = clk_get_rate(this->timer_clk) / (prescale + 1) / SAMPLE_BPS - 1;
     
 	//init tranfer and start timer
     tcon = this->pwm->TCON;
@@ -335,10 +339,9 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct tiny4412_1wire_data *priv;	
 	int ret;
-	struct clk *timer_clk;
 	dev_t devid;
 	
-	dev_err(dev, "start.");	
+	dev_dbg(dev, "probe.");	
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv) {
@@ -367,14 +370,15 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	}
 
 	/* Get clk */
-	timer_clk = devm_clk_get(dev, "timers");
-	if (IS_ERR(timer_clk)) {
+	priv->timer_clk = devm_clk_get(dev, "timers");
+	if (IS_ERR(priv->timer_clk)) {
 		dev_err(dev, "devm_clk_get error!\n");
 		return -EINVAL;
 	}
+	dev_dbg(dev, "clk = %ld Hz\n", clk_get_rate(priv->timer_clk));
 	
 	/* Enable clk */
-	ret = clk_prepare_enable(timer_clk);
+	ret = clk_prepare_enable(priv->timer_clk);
 	if (ret) {
 		dev_err(dev, "clk_prepare_enable error!\n");
 		return -EINVAL;
@@ -432,6 +436,8 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	/* Timer 3 */
 	priv->pwm->TCFG0 |=  (0xf << 8);
 	priv->pwm->TCFG1 &= ~(0xf << 12);
+	dev_dbg(dev, "TCFG0: %08x", priv->pwm->TCFG0);
+	dev_dbg(dev, "TCFG1: %08x", priv->pwm->TCFG1);
 
 	/* irq */
 	priv->irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
