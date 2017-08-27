@@ -21,32 +21,41 @@
 #include <sys/stat.h>
 #include <sys/epoll.h>
 
-
-#if 0
 static void help(void)
 {
-	printf("Usage: ./key <id>\n");
+	printf("Usage: ./backlight <brightness>\n");
 }
-#endif
 
-int main(int argc, char **argv)
+static void test_backlight(int argc, char **argv)
 {
-	int evfd = open("/dev/backlight_1wire", O_RDWR);
+	if (argc < 2) {
+		help();
+		return;
+	}
+
+	int value = 0;
+	sscanf(argv[1], "%d", &value);
+
+	int evfd = open("/dev/backlight", O_RDWR);
     if (evfd < 0) {
     	perror("[open]");
     }
 
-	for (int i=0; i<=127; i++) {
-        uint8_t buff = i;
-        if (write(evfd, &buff, 1) < 0) {
-            perror("write");
-        }
-		printf("backlight: %d\n", i);
-
-		usleep(50000);
+    uint8_t buff = value;
+	for (int i=0; i<1; i++) {
+  	 	if (write(evfd, &buff, 1) < 0) {
+     		perror("write");
+   		}
+		usleep(20000);
 	}
 
 	close(evfd);
+}
+
+int main(int argc, char **argv)
+{
+	test_backlight(argc, argv);
+	
 	printf("done!\n");
 
 	return 0;

@@ -141,10 +141,14 @@ static const unsigned char crc8_tab[] =
 };
 
 #define crc8_init(crc) ((crc) = 0XACU)
-#define crc8(crc, v) ( (crc) = crc8_tab[(crc) ^(v)])
+#define crc8(crc, v)   ((crc) = crc8_tab[(crc) ^(v)])
+
+struct lcd_key_data {
+	struct input_dev *input;
+};
+
 
 struct tiny4412_1wire_data {
-	struct timer_list timer;	
 	struct pinctrl *pctrl;
 	struct pinctrl_state *pstate_in;
 	struct pinctrl_state *pstate_out;
@@ -159,10 +163,27 @@ struct tiny4412_1wire_data {
 	struct cdev one_wire_cdev;
 	struct class *one_wire_class;
 	struct clk *timer_clk;
+	uint8_t req;
+	
+	/* Key sub system */
+	struct lcd_key_data key;
+
+	/* kernel timer */
+	struct timer_list timer;
+	unsigned char brightness;
+	uint8_t bl_wr_done;
+	uint8_t lcd_model;
+	int last_key;
 };
 
-
 static struct tiny4412_1wire_data *this = NULL;
+
+
+const unsigned int KEY_TABLE[] = {
+	KEY_HOME,
+	KEY_MENU,
+	KEY_BACK,
+};
 
 static void start_one_wire_session(unsigned char req)
 {
@@ -173,6 +194,7 @@ static void start_one_wire_session(unsigned char req)
 		return;
 	}
 
+	this->req = req;
     this->one_wire_status = START;
     gpio_set_value(this->gpio_write, 1);
     pinctrl_select_state(this->pctrl, this->pstate_out);
@@ -206,6 +228,10 @@ static void start_one_wire_session(unsigned char req)
     gpio_set_value(this->gpio_write, 0);
 }
 
+
+/*********************************************************
+	Brief：backlight
+*********************************************************/
 static int backlight_open(struct inode *inode, struct file *file)
 {
     printk("backlight_open\n");
@@ -218,9 +244,12 @@ static int backlight_release(struct inode *inode, struct file *file)
     return 0;
 }
 
+DECLARE_WAIT_QUEUE_HEAD(bl_wait);
+
 static ssize_t backlight_write(struct file *file, const char __user *buf, size_t count, loff_t *off)
 {
-	unsigned char reg, ret;
+	unsigned char reg;
+	int ret;
  
    	ret = copy_from_user(&reg, buf, 1);
     if (ret < 0)
@@ -231,8 +260,17 @@ static ssize_t backlight_write(struct file *file, const char __user *buf, size_t
     if (reg > 127) {
 		reg = 127; 
 	}
+	pr_notice("<0-127> brightness = %d\n", reg);
 
-    start_one_wire_session(reg + 0x80);
+	this->bl_wr_done = 0;
+	this->brightness = 0x80 + reg;
+	ret = wait_event_interruptible_timeout(bl_wait, this->bl_wr_done, HZ/10);
+	if (ret < 0) {
+		return ret;
+	} else if (ret == 0) {
+		return -ETIMEDOUT;
+	}
+
     return 1;
 }
 
@@ -244,10 +282,116 @@ static struct file_operations backlight_fops =
     .write              = backlight_write,
 };
 
+/*********************************************************
+        Brief：lcd_key
+*********************************************************/
+static int lcd_key_open(struct inode *inode, struct file *file)
+{
+    printk("lcd_key_open\n");
+    return 0;
+}
+
+static int lcd_key_release(struct inode *inode, struct file *file)
+{
+    printk("lcd_key_exit\n");
+    return 0;
+}
+
+DECLARE_WAIT_QUEUE_HEAD(lcd_key_wait);
+
+static ssize_t lcd_key_write(struct file *file, const char __user *buf, size_t count, loff_t *off)
+{
+22222222222	
+}
+
+static struct file_operations lcd_key_fops =
+{
+    .owner              = THIS_MODULE,
+    .open               = lcd_key_open,
+    .release            = lcd_key_release,
+    .write              = lcd_key_write,
+};
+
 
 static inline void stop_timer_for_1wire(void)
 {
 	this->pwm->TCON &= ~(1 << 16);
+}
+
+static inline void notify_bl_data(unsigned char a, unsigned char b, unsigned char c)
+{
+	this->bl_wr_done = 1;
+	this->brightness = 0;
+	wake_up_interruptible(&bl_wait);
+	printk(KERN_DEBUG "Write backlight done.\n");
+}
+
+static inline void notify_info_data(unsigned char _lcd_type,
+		unsigned char ver_year, unsigned char week)
+{
+	if (_lcd_type != 0xFF) {
+		unsigned int firmware_ver = ver_year * 100 + week;
+
+		/* Currently only S702 has hard key */
+		pr_notice("[LCD] model = %s, ver = %d\n", (_lcd_type == 24) ? "S702" : "N/A", firmware_ver);
+		this->lcd_model = _lcd_type;
+	}
+}
+
+static void ts_if_report_key(int key) 
+{
+	int changed = this->last_key ^ key;
+	int down;
+	int i;
+
+	if (!changed)
+		return;
+
+	for (i = 0; i < ARRAY_SIZE(KEY_TABLE); i++) {
+		if (changed & (1 << i)) {
+			down = !!((1<<i) & key);
+			printk(KERN_DEBUG "report key = %d press = %d\n", KEY_TABLE[i], down);
+			input_report_key(this->key.input, KEY_TABLE[i], down);
+		}
+	}
+
+	this->last_key = key;
+	input_sync(this->key.input);
+	return;
+}
+
+static void one_wire_session_complete(unsigned char req, unsigned int res)
+{
+	unsigned char crc;
+	const unsigned char *p = (const unsigned char*)&res;
+
+	crc8_init(crc);
+	crc8(crc, p[3]);
+	crc8(crc, p[2]);
+	crc8(crc, p[1]);
+
+	// CRC dismatch
+	if (crc != p[0]) {
+		return;
+	}
+	
+	switch (req) {
+		case REQ_KEY:
+			ts_if_report_key(p[1]);
+			break;
+
+		case REQ_TS:
+			pr_notice("It does not support touchscreen for onewire!\n");
+			break;
+
+		case REQ_INFO:
+			notify_info_data(p[3], p[2], p[1]);
+			break;
+
+		default:
+			notify_bl_data(p[3], p[2], p[1]);
+			break;
+	}
 }
 
 static irqreturn_t timer_for_1wire_interrupt(int irq, void *dev_id)
@@ -261,6 +405,8 @@ static irqreturn_t timer_for_1wire_interrupt(int irq, void *dev_id)
 
 	this->io_bit_count--;
 	switch(this->one_wire_status) {
+	case IDLE:
+		break;
 	case START:
 		if (this->io_bit_count == 0) {
 			this->io_bit_count = 16;
@@ -281,6 +427,7 @@ static irqreturn_t timer_for_1wire_interrupt(int irq, void *dev_id)
 	case WAITING:
 		if (this->io_bit_count == 0) {
 			this->io_bit_count = 32;
+			this->io_data = 0;
 			this->one_wire_status = RESPONSE;
 		}
 		if (this->io_bit_count == 1) {
@@ -297,7 +444,8 @@ static irqreturn_t timer_for_1wire_interrupt(int irq, void *dev_id)
 			this->one_wire_status = STOPING;
 			gpio_set_value(this->gpio_write, 1);
 			pinctrl_select_state(this->pctrl, this->pstate_out);
-			//one_wire_session_complete(one_wire_request, io_data);
+			//rx data
+			one_wire_session_complete(this->req, this->io_data);
 		}
 		break;
 
@@ -452,7 +600,7 @@ static int ts_1wire_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	start_one_wire_session(0x60);
+	start_one_wire_session(REQ_INFO);
 	
 	/* char device */
 	ret = alloc_chrdev_region(&devid, 0, 1, "backlight");
@@ -465,8 +613,8 @@ static int ts_1wire_probe(struct platform_device *pdev)
 	cdev_add(&priv->one_wire_cdev, devid, 1);
 
 	/* class */	
-	priv->one_wire_class = class_create(THIS_MODULE, "one_wire_bl");
-    device_create(priv->one_wire_class, NULL, MKDEV(priv->major, 0), NULL, "backlight_1wire");
+	priv->one_wire_class = class_create(THIS_MODULE, "onewire_backlight");
+    device_create(priv->one_wire_class, NULL, MKDEV(priv->major, 0), NULL, "backlight");
 
 	platform_set_drvdata(pdev, priv);		
 
@@ -500,12 +648,102 @@ static struct platform_driver ts_1wire_device_driver = {
 	.probe				= ts_1wire_probe,
 	.remove				= ts_1wire_remove,
 	.driver				= {
-		.name			= "tiny4412_1wire",
+		.name			= "tiny4412_onewire",
 		.of_match_table = of_match_ptr(ts_1wire_of_match),
 	},
 };
 
-module_platform_driver(ts_1wire_device_driver);
+
+/*********************************************************
+	Brief：Kernel Timer
+*********************************************************/
+static void timer_handler(unsigned long timer)
+{
+	if (this->one_wire_status != IDLE) {
+		return;
+	}
+
+	if (!this->lcd_model) {
+		start_one_wire_session(REQ_INFO);
+	} else if (this->brightness) {
+		start_one_wire_session(this->brightness);
+	} else {
+		start_one_wire_session(REQ_KEY);
+	}
+}
+
+static void	timer_callback(unsigned long timer)
+{
+	this->timer.expires = jiffies + msecs_to_jiffies(20);
+	add_timer(&this->timer);
+	
+	timer_handler(timer);
+}
+
+static void timer_setup(void)
+{
+	init_timer(&this->timer);
+	this->timer.function = timer_callback;
+	/* Start up timer */
+	timer_callback(0);
+}
+
+
+/*********************************************************
+	Brief：LCD key
+*********************************************************/
+
+static int lcd_key_init(void)
+{
+	struct input_dev *input;
+	int ret,i;
+
+	input = input_allocate_device();
+	if (!input) {
+		pr_notice("input alloc error!\n");
+		return -ENOMEM;
+	}
+
+	input->name = "tiny4412_lcd_key";
+	input->id.bustype   = BUS_RS232;
+	input->id.vendor	= 0xDEAD;
+	input->id.product	= 0xBEEF;
+	input->id.version 	= 0x0100;
+	
+	input->evbit[0] = BIT_MASK(EV_KEY) | BIT(EV_SYN);
+	
+	for (i=0; i<ARRAY_SIZE(KEY_TABLE); ++i) {
+		input_set_capability(input, EV_KEY, KEY_TABLE[i]);
+	}
+	
+	ret = input_register_device(input);
+	this->key.input = input;
+
+	return ret;
+}
+
+
+
+static int __init dev_init(void)
+{
+	int ret = platform_driver_register(&ts_1wire_device_driver);	
+	if (!ret) {
+		ret = lcd_key_init();
+		timer_setup();
+	}
+
+	return ret;
+}
+
+static void __exit dev_exit(void)
+{
+	del_timer_sync(&this->timer);
+	input_unregister_device(this->key.input);
+	platform_driver_unregister(&ts_1wire_device_driver);
+}
+
+module_init(dev_init);
+module_exit(dev_exit);
 
 
 MODULE_LICENSE("GPL");
