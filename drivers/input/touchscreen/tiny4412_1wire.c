@@ -282,37 +282,6 @@ static struct file_operations backlight_fops =
     .write              = backlight_write,
 };
 
-/*********************************************************
-        Brief：lcd_key
-*********************************************************/
-static int lcd_key_open(struct inode *inode, struct file *file)
-{
-    printk("lcd_key_open\n");
-    return 0;
-}
-
-static int lcd_key_release(struct inode *inode, struct file *file)
-{
-    printk("lcd_key_exit\n");
-    return 0;
-}
-
-DECLARE_WAIT_QUEUE_HEAD(lcd_key_wait);
-
-static ssize_t lcd_key_write(struct file *file, const char __user *buf, size_t count, loff_t *off)
-{
-22222222222	
-}
-
-static struct file_operations lcd_key_fops =
-{
-    .owner              = THIS_MODULE,
-    .open               = lcd_key_open,
-    .release            = lcd_key_release,
-    .write              = lcd_key_write,
-};
-
-
 static inline void stop_timer_for_1wire(void)
 {
 	this->pwm->TCON &= ~(1 << 16);
