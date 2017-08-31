@@ -24,7 +24,6 @@
  * Development of this driver has been sponsored by Glyn:
  *    http://www.glyn.com/Products/Displays
  */
-
 #include <linux/module.h>
 #include <linux/ratelimit.h>
 #include <linux/irq.h>
