@@ -10,7 +10,6 @@
  * Free Software Foundation;  either version 2 of the  License, or (at your
  * option) any later version.
  */
-
 #include <linux/pm_runtime.h>
 #include <drm/drmP.h>
 #include <drm/drm_atomic.h>
@@ -395,7 +394,7 @@ static int exynos_drm_bind(struct device *dev)
 
 	/* force connectors detection */
 	drm_helper_hpd_irq_event(drm);
-
+	
 	/* register the DRM device */
 	ret = drm_dev_register(drm, 0);
 	if (ret < 0)

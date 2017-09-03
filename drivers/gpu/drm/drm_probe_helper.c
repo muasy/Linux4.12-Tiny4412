@@ -28,7 +28,6 @@
  *      Dave Airlie <airlied@linux.ie>
  *      Jesse Barnes <jesse.barnes@intel.com>
  */
-
 #include <linux/export.h>
 #include <linux/moduleparam.h>
 
@@ -659,7 +658,7 @@ bool drm_helper_hpd_irq_event(struct drm_device *dev)
 	struct drm_connector_list_iter conn_iter;
 	enum drm_connector_status old_status;
 	bool changed = false;
-
+	
 	if (!dev->mode_config.poll_enabled)
 		return false;
 

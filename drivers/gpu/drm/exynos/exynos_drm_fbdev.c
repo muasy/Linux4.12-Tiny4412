@@ -240,7 +240,7 @@ int exynos_drm_fbdev_init(struct drm_device *dev)
 		DRM_ERROR("failed to set up hw configuration.\n");
 		goto err_setup;
 	}
-
+	
 	return 0;
 
 err_setup:
@@ -303,7 +303,7 @@ void exynos_drm_output_poll_changed(struct drm_device *dev)
 {
 	struct exynos_drm_private *private = dev->dev_private;
 	struct drm_fb_helper *fb_helper = private->fb_helper;
-
+	
 	if (fb_helper)
 		drm_fb_helper_hotplug_event(fb_helper);
 	else

@@ -80,28 +80,7 @@
 		status = "okay";
 	};
 
-	lcd {
-		display-timings {
-			native-mode = <&timing0>;
-			timing0: timing {
-				clock-frequency = <160000000>;
-				hactive = <800>;
-				vactive = <480>;
-				hfront-porch = <64>;
-				hback-porch = <16>;
-				hsync-len = <48>;
-				vback-porch = <64>;
-				vfront-porch = <16>;
-				vsync-len = <3>;
-			};
-		};
 		
-		ports { 
-			#address-cells = <1>; 
-			#size-cells = <0>;
-		};
-	};
-
 	HelloWorld {
 		compatible = "tiny4412, hello_world";
 		status = "okay";
@@ -170,7 +149,18 @@
 		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
 		pwms = <&pwm 0 1000000000 0>;
 	};
+
+	lcd_demo@11C00000{
+			compatible         = "tiny4412,lcd_demo";
+			reg = <0x11C00000  0x20c0 0x10010210 0x08 0x10023c80 0x04 0x1003c000 0x1000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&lcd_demo>;
+			clocks = <&clock CLK_FIMD0 &clock CLK_ACLK160>;
+			clock-names = "fimd0","aclk160";
+	};
+
 };
+
 
 &rtc {
 	status = "okay";
@@ -214,6 +204,10 @@
 	status = "okay";
 };
 
+&hsotg {
+	status = "okay";
+};
+
 &ehci {
 	status = "okay";
 	port@0 {
@@ -227,14 +221,11 @@
 	};
 };
 
-&hsotg {
+&ohci {
 	status = "okay";
-};
-
-&fimd {
-	pinctrl-0 = <&lcd_clk &lcd_data24 &pwm1_out>;
-	pinctrl-names = "default";
-	status = "disabled";
+	port@0 {
+		status = "okay";
+	};
 };
 
 &pinctrl_1 {
@@ -274,12 +265,67 @@
 	};
 };
 
+/*
+&fimd {
+	pinctrl-0 = <&lcd_clk &lcd_data24>;
+	pinctrl-names = "default";
+	status = "okay";
+	clocks = <&clock CLK_FIMD0>, <&clock CLK_ACLK160>;
+	
+	display-timings {
+		native-mode = <&timing0>;
+		timing0: timing {
+			clock-frequency = <30000000>;
+			hactive = <800>;
+			vactive = <480>;
+			hfront-porch = <80>;
+			hback-porch = <36>;
+			hsync-len = <48>;
+			vback-porch = <15>;
+			vfront-porch = <22>;
+			vsync-len = <3>;
+		};
+	};
+	
+	port {
+		dsi_in: endpoint {
+			remote-endpoint = <&dsi_out>;
+		};
+	};
+};
 
+&dsi_0 {
+    samsung,burst-clock-frequency = <500000000>;
+    samsung,esc-clock-frequency = <20000000>;
+    samsung,pll-clock-frequency = <24000000>;
+	status = "okay";
+	
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
 
+		port@1 {
+			reg = <1>;
 
+			dsi_out: endpoint {
+				remote-endpoint = <&dsi_in>;
+				samsung,burst-clock-frequency = <500000000>;
+				samsung,esc-clock-frequency = <20000000>;
+			};
+		};
+	};
+};
+*/
 
+&pinctrl_0 {
+        lcd_demo: lcd{
+                samsung,pins = "gpf0-0", "gpf0-1", "gpf0-2", "gpf0-3", "gpf0-4", "gpf0-5", "gpf0-6","gpf0-7", "gpf1-0", "gpf1-1", "gpf1-2", "gpf1-3", "gpf1-4", "gpf1-5", "gpf1-6","gpf1-7", "gpf2-0", "gpf2-1", "gpf2-2", "gpf2-3", "gpf2-4", "gpf2-5", "gpf2-6","gpf2-7", "gpf3-0", "gpf3-1", "gpf3-2", "gpf3-3";
+                samsung,pin-function = <2>;
+                samsung,pin-pud = <0>;
+                samsung,pin-drv = <0>;
+        };
 
-
+};
 
 
 

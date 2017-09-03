@@ -1012,7 +1012,7 @@ static int fimd_bind(struct device *dev, struct device *master, void *data)
 		ctx->dp_clk.enable = fimd_dp_clock_enable;
 		ctx->crtc->pipe_clk = &ctx->dp_clk;
 	}
-
+	
 	if (ctx->encoder)
 		exynos_dpi_bind(drm_dev, ctx->encoder);
 
@@ -1051,7 +1051,7 @@ static int fimd_probe(struct platform_device *pdev)
 	struct device_node *i80_if_timings;
 	struct resource *res;
 	int ret;
-
+	
 	if (!dev->of_node)
 		return -ENODEV;
 
@@ -1152,7 +1152,7 @@ static int fimd_probe(struct platform_device *pdev)
 	ret = component_add(dev, &fimd_component_ops);
 	if (ret)
 		goto err_disable_pm_runtime;
-
+	
 	return ret;
 
 err_disable_pm_runtime:

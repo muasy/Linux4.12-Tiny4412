@@ -167,7 +167,7 @@ exynos_user_fb_create(struct drm_device *dev, struct drm_file *file_priv,
 		ret = PTR_ERR(fb);
 		goto err;
 	}
-
+	
 	return fb;
 
 err:
@@ -235,7 +235,7 @@ void exynos_drm_mode_config_init(struct drm_device *dev)
 	 */
 	dev->mode_config.max_width = 4096;
 	dev->mode_config.max_height = 4096;
-
+	
 	dev->mode_config.funcs = &exynos_drm_mode_config_funcs;
 	dev->mode_config.helper_private = &exynos_drm_mode_config_helpers;
 }
