@@ -1,3 +1,5 @@
+#define DEBUG
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -63,6 +65,7 @@ static struct fb_info *s3c_lcd;
 static volatile void __iomem *lcd_regs_base;
 static volatile void __iomem *clk_regs_base;
 static volatile void __iomem *lcdblk_regs_base;
+static volatile void __iomem *lcd0_configuration;
 static u32 pseudo_palette[16];
 static struct resource *res1, *res2, *res3, *res4;
 
@@ -80,7 +83,6 @@ static int s3c_lcdfb_setcolreg(unsigned int regno, unsigned int red,
                                unsigned int transp, struct fb_info *info)
 {
     unsigned int val;
-
     if (regno > 16)
         { return 1; }
 
@@ -95,7 +97,6 @@ static int s3c_lcdfb_setcolreg(unsigned int regno, unsigned int red,
 
 static int lcd_probe(struct platform_device *pdev)
 {
-    volatile unsigned int *LCD0_CONFIGURATION;
     int ret;
     unsigned int temp;
     /* 1. 分配一个fb_info */
@@ -121,7 +122,24 @@ static int lcd_probe(struct platform_device *pdev)
     s3c_lcd->var.blue.offset    = 0;	//蓝
     s3c_lcd->var.blue.length    = 5;
     s3c_lcd->var.activate       = FB_ACTIVATE_NOW;
-    /* 2.3 设置操作函数 */
+#if 0
+{  
+	 struct fb_videomode *mem = devm_kzalloc(&pdev->dev, sizeof(struct fb_videomode), GFP_KERNEL);	
+	
+	mem->left_margin	= 36;
+mem->right_margin	= 80;
+mem->upper_margin	= 15;
+mem->lower_margin	= 22;
+mem->hsync_len		= 10;
+mem->vsync_len		= 8;
+mem->xres			= 800;
+mem->yres			= 480;
+mem->pixclock		= 33036;
+
+	s3c_lcd->mode = mem;
+}
+#endif
+	 /* 2.3 设置操作函数 */
     s3c_lcd->fbops              = &s3c_lcdfb_ops;
     /* 2.4 其他的设置 */
     s3c_lcd->pseudo_palette = pseudo_palette;		//调色板
@@ -133,15 +151,12 @@ static int lcd_probe(struct platform_device *pdev)
     /* 3.2 根据LCD手册设置LCD控制器, 比如VCLK的频率等 */
     //寄存器映射
     res1 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
     if (res1 == NULL)
     {
         printk("platform_get_resource error\n");
         return -EINVAL;
     }
-
     lcd_regs_base = devm_ioremap_resource(&pdev->dev, res1);
-
     if (lcd_regs_base == NULL)
     {
         printk("devm_ioremap_resource error\n");
@@ -149,15 +164,12 @@ static int lcd_probe(struct platform_device *pdev)
     }
 
     res2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-
     if (res2 == NULL)
     {
         printk("platform_get_resource error\n");
         return -EINVAL;
     }
-
     lcdblk_regs_base = devm_ioremap_resource(&pdev->dev, res2);
-
     if (lcdblk_regs_base == NULL)
     {
         printk("devm_ioremap_resource error\n");
@@ -165,27 +177,27 @@ static int lcd_probe(struct platform_device *pdev)
     }
 
     res3 = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-
     if (res3 == NULL)
     {
         printk("platform_get_resource error\n");
         return -EINVAL;
     }
+	lcd0_configuration = ioremap(res3->start, 0x04);    
+	if (lcd0_configuration == NULL)
+    {
+        printk("devm_ioremap_resource error\n");
+        return -EINVAL;
+    }
+	*(unsigned long *)lcd0_configuration = 7;
 
-    LCD0_CONFIGURATION = ioremap(res3->start, 0x04);
-    *LCD0_CONFIGURATION = 0x07;
-	
     res4 = platform_get_resource(pdev, IORESOURCE_MEM, 3);
-
-    if (res4 == NULL)
+    if (res3 == NULL)
     {
         printk("platform_get_resource error\n");
         return -EINVAL;
     }
-
     clk_regs_base = ioremap(res4->start, 0x1000);
-
-    if (clk_regs_base == NULL)
+	if (clk_regs_base == NULL)
     {
         printk("devm_ioremap_resource error\n");
         return -EINVAL;
@@ -291,16 +303,20 @@ static int lcd_probe(struct platform_device *pdev)
     // s3c_lcd->screen_base 	显存虚拟地址
     // s3c_lcd->fix.smem_len 	显存大小，前面计算的
     // s3c_lcd->fix.smem_start 	显存物理地址
-    s3c_lcd->screen_base = dma_alloc_writecombine(NULL, s3c_lcd->fix.smem_len, (dma_addr_t *)&s3c_lcd->fix.smem_start, GFP_KERNEL);
-    //显存起始地址
+   	s3c_lcd->screen_base = dma_alloc_writecombine(NULL, s3c_lcd->fix.smem_len, (dma_addr_t *)&s3c_lcd->fix.smem_start, GFP_KERNEL);
+	pr_notice("[LCD] phy_lcd_base = %x | vir_lcd_base = %p | lcd_size = %d\n", s3c_lcd->fix.smem_start, s3c_lcd->screen_base, s3c_lcd->fix.smem_len);
+	
+	//显存起始地址
     writel(s3c_lcd->fix.smem_start, lcd_regs_base + VIDW00ADD0B0);
     //显存结束地址
     writel(s3c_lcd->fix.smem_start + s3c_lcd->fix.smem_len, lcd_regs_base + VIDW00ADD1B0);
     //Enables video output and logic immediately
     temp = readl(lcd_regs_base + VIDCON0);
     writel(temp | 0x03, lcd_regs_base + VIDCON0);
+
     /* 4. 注册 */
     ret = register_framebuffer(s3c_lcd);
+
     return ret;
 }
 
@@ -309,11 +325,6 @@ static int lcd_remove(struct platform_device *pdev)
     printk("%s enter.\n", __func__);
     unregister_framebuffer(s3c_lcd);
     dma_free_writecombine(NULL, s3c_lcd->fix.smem_len, s3c_lcd->screen_base, s3c_lcd->fix.smem_start);
-//    iounmap(lcd_regs);
-//    iounmap(gpbcon);
-//    iounmap(gpccon);
-//    iounmap(gpdcon);
-//    iounmap(gpgcon);
     framebuffer_release(s3c_lcd);
     return 0;
 }

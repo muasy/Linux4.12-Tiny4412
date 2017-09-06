@@ -478,7 +478,6 @@ static ssize_t at24_eeprom_write_i2c(struct at24_data *at24, const char *buf,
 	msg.buf = at24->writebuf;
 	if (at24->chip.flags & AT24_FLAG_ADDR16)
 		msg.buf[i++] = offset >> 8;
-
 	msg.buf[i++] = offset;
 	memcpy(&msg.buf[i], buf, count);
 	msg.len = i + count;
