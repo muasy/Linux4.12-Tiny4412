@@ -15,6 +15,7 @@
 #include "exynos4412.dtsi"
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/clock/maxim,max77686.h>
 
 / {
 	model = "FriendlyARM TINY4412 board based on Exynos4412";
@@ -164,6 +165,8 @@
 
 &rtc {
 	status = "okay";
+	clocks = <&clock CLK_RTC>, <&clock CLK_RTC>;
+	clock-names = "rtc", "rtc_src";
 };
 
 &sdhci_2 {
