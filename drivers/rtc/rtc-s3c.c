@@ -13,7 +13,6 @@
  *
  * S3C2410/S3C2440/S3C24XX Internal RTC Driver
 */
-
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/string.h>
@@ -789,7 +788,7 @@ static struct s3c_rtc_data const s3c2443_rtc_data = {
 
 static struct s3c_rtc_data const s3c6410_rtc_data = {
 	.max_user_freq		= 32768,
-	.needs_src_clk		= true,
+	.needs_src_clk		= false,
 	.irq_handler		= s3c6410_rtc_irq,
 	.set_freq		= s3c6410_rtc_setfreq,
 	.enable_tick		= s3c6410_rtc_enable_tick,

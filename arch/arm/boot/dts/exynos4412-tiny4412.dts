@@ -165,9 +165,8 @@
 
 &rtc {
 	status = "okay";
-	clocks = <&clock CLK_RTC>, <&clock CLK_RTC>;
-	clock-names = "rtc", "rtc_src";
 };
+
 
 &sdhci_2 {
 	bus-width = <4>;
@@ -278,6 +277,11 @@
 		touchscreen-max-pressure = <2048>;
 	};
 };
+
+&adc {
+	status = "okay";
+};
+
 
 /*
 &fimd {
