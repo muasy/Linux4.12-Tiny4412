@@ -26,7 +26,7 @@
  * the CRC-8 functions is based on web page from http://lfh1986.blogspot.com
  */
 
- #define DEBUG 
+// #define DEBUG 
 
 #include <linux/errno.h>
 #include <linux/kernel.h>

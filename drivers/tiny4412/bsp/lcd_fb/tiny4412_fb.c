@@ -99,11 +99,14 @@ static int lcd_probe(struct platform_device *pdev)
 {
     int ret;
     unsigned int temp;
-    /* 1. 分配一个fb_info */
+    
+	printk("[LCD] %s\n", __func__);	
+
+	/* 1. 分配一个fb_info */
     s3c_lcd = framebuffer_alloc(0, NULL);
     /* 2. 设置 */
     /* 2.1 设置 fix 固定的参数 */
-    strcpy(s3c_lcd->fix.id, "mylcd");
+    strcpy(s3c_lcd->fix.id, "s702");
     s3c_lcd->fix.smem_len = 480 * 800 * 16 / 8;	    //显存的长度
     s3c_lcd->fix.type     = FB_TYPE_PACKED_PIXELS;	//类型
     s3c_lcd->fix.visual   = FB_VISUAL_TRUECOLOR; 	//TFT 真彩色
@@ -122,24 +125,7 @@ static int lcd_probe(struct platform_device *pdev)
     s3c_lcd->var.blue.offset    = 0;	//蓝
     s3c_lcd->var.blue.length    = 5;
     s3c_lcd->var.activate       = FB_ACTIVATE_NOW;
-#if 0
-{  
-	 struct fb_videomode *mem = devm_kzalloc(&pdev->dev, sizeof(struct fb_videomode), GFP_KERNEL);	
-	
-	mem->left_margin	= 36;
-mem->right_margin	= 80;
-mem->upper_margin	= 15;
-mem->lower_margin	= 22;
-mem->hsync_len		= 10;
-mem->vsync_len		= 8;
-mem->xres			= 800;
-mem->yres			= 480;
-mem->pixclock		= 33036;
-
-	s3c_lcd->mode = mem;
-}
-#endif
-	 /* 2.3 设置操作函数 */
+	/* 2.3 设置操作函数 */
     s3c_lcd->fbops              = &s3c_lcdfb_ops;
     /* 2.4 其他的设置 */
     s3c_lcd->pseudo_palette = pseudo_palette;		//调色板
@@ -304,7 +290,6 @@ mem->pixclock		= 33036;
     // s3c_lcd->fix.smem_len 	显存大小，前面计算的
     // s3c_lcd->fix.smem_start 	显存物理地址
    	s3c_lcd->screen_base = dma_alloc_writecombine(NULL, s3c_lcd->fix.smem_len, (dma_addr_t *)&s3c_lcd->fix.smem_start, GFP_KERNEL);
-	pr_notice("[LCD] phy_lcd_base = %x | vir_lcd_base = %p | lcd_size = %d\n", s3c_lcd->fix.smem_start, s3c_lcd->screen_base, s3c_lcd->fix.smem_len);
 	
 	//显存起始地址
     writel(s3c_lcd->fix.smem_start, lcd_regs_base + VIDW00ADD0B0);
@@ -316,13 +301,11 @@ mem->pixclock		= 33036;
 
     /* 4. 注册 */
     ret = register_framebuffer(s3c_lcd);
-
     return ret;
 }
 
 static int lcd_remove(struct platform_device *pdev)
 {
-    printk("%s enter.\n", __func__);
     unregister_framebuffer(s3c_lcd);
     dma_free_writecombine(NULL, s3c_lcd->fix.smem_len, s3c_lcd->screen_base, s3c_lcd->fix.smem_start);
     framebuffer_release(s3c_lcd);
@@ -331,7 +314,7 @@ static int lcd_remove(struct platform_device *pdev)
 
 static const struct of_device_id lcd_dt_ids[] =
 {
-    { .compatible = "tiny4412,lcd_demo", },
+    { .compatible = "tiny4412, lcd_s702", },
     {},
 };
 
@@ -340,7 +323,7 @@ MODULE_DEVICE_TABLE(of, lcd_dt_ids);
 static struct platform_driver lcd_driver =
 {
     .driver        = {
-        .name      = "lcd_demo",
+        .name      = "lcd_s702",
         .of_match_table    = of_match_ptr(lcd_dt_ids),
     },
     .probe         = lcd_probe,
@@ -350,12 +333,11 @@ static struct platform_driver lcd_driver =
 static int lcd_init(void)
 {
     int ret;
-    printk("enter %s\n", __func__);
     ret = platform_driver_register(&lcd_driver);
 
     if (ret)
     {
-        printk(KERN_ERR "pwm demo: probe faipwm: %d\n", ret);
+        printk(KERN_ERR "lcd: probe fail: %d\n", ret);
     }
 
     return ret;
