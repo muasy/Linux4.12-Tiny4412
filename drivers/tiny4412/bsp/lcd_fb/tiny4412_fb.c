@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -135,8 +135,6 @@ static int lcd_probe(struct platform_device *pdev)
  	/* 2.4 其他的设置 */
     s3c_lcd->pseudo_palette 	= pseudo_palette;		//调色板
     s3c_lcd->screen_size    	= LCD_LENTH * LCD_WIDTH * BITS_PER_PIXEL / 8;	//显存大小
-    
-	
 
 	/* 3. 硬件相关的操作 */
     /* 3.1 配置GPIO用于LCD */
@@ -222,7 +220,7 @@ static int lcd_probe(struct platform_device *pdev)
     temp |= 1 << 0;
     writel(temp, lcdblk_regs_base + LCDBLK_CFG2);
     mdelay(1000);
-    //分频	800/(23 +1 ) == 33M
+    //分频	800/(23 +1 ) == 33.3M
     temp = readl(lcd_regs_base + VIDCON0);
     temp |= (23 << 6);
     writel(temp, lcd_regs_base + VIDCON0);

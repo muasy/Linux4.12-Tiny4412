@@ -28,8 +28,8 @@
 #define FBIOGET_VSCREENINFO	0x4600
 #define FBIOPUT_VSCREENINFO	0x4601
 #define FBIOGET_FSCREENINFO	0x4602
-#define FBIOGETCMAP		0x4604
-#define FBIOPUTCMAP		0x4605
+#define FBIOGETCMAP			0x4604
+#define FBIOPUTCMAP			0x4605
 #define FBIOPAN_DISPLAY		0x4606
 
 typedef uint32_t __u32;
@@ -128,9 +128,9 @@ static void sigint_handler(int dunno)
 */
 
 
-#define RED_COLOR565 0x0F100
-#define GREEN_COLOR565 0x007E0
-#define BLUE_COLOR565 0x0001F
+#define RED_COLOR565 	0xFF0000
+#define GREEN_COLOR565 	0x00FF00
+#define BLUE_COLOR565 	0x0000FF
 
 int main(int argc, char **argv)
 {
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	struct fb_var_screeninfo vinfo;
 	struct fb_fix_screeninfo finfo;
 	long int screen_size = 0;
-	short *fbp565 = NULL;
+	uint32_t *fbp = NULL;
 
 	int x = 0, y = 0;
 
@@ -159,27 +159,22 @@ int main(int argc, char **argv)
 	}
 
 	screen_size = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
+	printf("%d-%d, %dbpp, screen_size = %ld\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel, screen_size);
 
-	printf("%d-%d, %dbpp, screen_size = %d\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel, screen_size );
-
-	fbp565 = (short *)mmap(0, screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, fb, 0);
-	if(fbp565 < 0) {
+	fbp = (uint32_t *)mmap(0, screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, fb, 0);
+	if(fbp < 0) {
 		printf("mmap return error\n");
 		return -1;
 	}
-	printf("start addr = %p active = %d\n", fbp565, vinfo.activate);
 
-    if(vinfo.bits_per_pixel == 16)  
     {  
-        printf("16 bpp framebuffer\n");  
-  
         // Red Screen   
         printf("Red Screen\n");  
         for(y = 0; y < vinfo.yres/3;  y++)  
         {  
             for(x = 0; x < vinfo.xres ; x++)  
             {  
-                *(fbp565 + y * vinfo.xres + x) = RED_COLOR565;  
+                *(fbp + y * vinfo.xres + x) = RED_COLOR565;  
             }  
         }  
   
@@ -189,7 +184,7 @@ int main(int argc, char **argv)
         {  
             for(x = 0; x < vinfo.xres; x++)  
             {  
-                *(fbp565 + y * vinfo.xres + x) =GREEN_COLOR565;  
+                *(fbp + y * vinfo.xres + x) =GREEN_COLOR565;  
             }  
         }  
   
@@ -199,17 +194,12 @@ int main(int argc, char **argv)
         {  
             for(x = 0; x < vinfo.xres; x++)  
             {  
-                *(fbp565 + y * vinfo.xres + x) = BLUE_COLOR565;  
+                *(fbp + y * vinfo.xres + x) = BLUE_COLOR565;  
             }  
         }  
     }  
       
-    else  
-    {  
-        printf("warnning: bpp is not 16\n");  
-    }  
-
-	munmap(fbp565, screen_size);
+	munmap(fbp, screen_size);
 	close(fb);
 	return 0;
 }

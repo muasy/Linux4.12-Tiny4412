@@ -230,22 +230,6 @@
 	};
 };
 
-&pinctrl_1 {
-	backlight_out: backlight_out {
-		samsung,pins = "gpx1-2";
-		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
-		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
-		samsung,pin-drv = <EXYNOS4_PIN_DRV_LV1>;
-	};
-
-	backlight_in: backlight_in {
-		samsung,pins = "gpx1-2";
-		samsung,pin-function = <EXYNOS_PIN_FUNC_INPUT>;
-		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
-		samsung,pin-drv = <EXYNOS4_PIN_DRV_LV1>;
-	};
-	
-};
 
 &i2c_0 {
 	samsung,i2c-sda-delay = <100>;
@@ -312,4 +296,19 @@
 
 };
 
+&pinctrl_1 {
+	backlight_out: backlight_out {
+		samsung,pins = "gpx1-2";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_OUTPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS4_PIN_DRV_LV1>;
+	};
+
+	backlight_in: backlight_in {
+		samsung,pins = "gpx1-2";
+		samsung,pin-function = <EXYNOS_PIN_FUNC_INPUT>;
+		samsung,pin-pud = <EXYNOS_PIN_PULL_NONE>;
+		samsung,pin-drv = <EXYNOS4_PIN_DRV_LV1>;
+	};
+};
 
