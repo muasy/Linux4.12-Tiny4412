@@ -8,7 +8,7 @@ obj-m       := $(TARGET).o
 CROSS       := arm-none-linux-gnueabi-
 KDIR        := /opt/fs/rootfs/rootfs/lib/modules/4.12.0+/build
 PWD         := $(shell pwd)
-INSTALL_DIR := /opt/fs/rootfs/rootfs/
+INSTALL_DIR := /opt/fs/rootfs/rootfs
 
 all:
 	$(MAKE) -C $(KDIR) M=$(PWD)

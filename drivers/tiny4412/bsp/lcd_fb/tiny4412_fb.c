@@ -43,8 +43,14 @@
 #define 	CLK_DIV_LCD			0x534
 #define 	CLK_GATE_IP_LCD		0x934
 
-#define 	LCDBLK_CFG 		0x00
-#define		LCDBLK_CFG2		0x04
+#define 	LCDBLK_CFG 			0x00
+#define		LCDBLK_CFG2			0x04
+
+#define 	LCD_LENTH 			800
+#define 	LCD_WIDTH 			480
+#define 	BITS_PER_PIXEL 		32
+
+
 
 static int s3c_lcdfb_setcolreg(unsigned int regno, unsigned int red,
                                unsigned int green, unsigned int blue,
@@ -82,16 +88,15 @@ static int s3c_lcdfb_setcolreg(unsigned int regno, unsigned int red,
                                unsigned int green, unsigned int blue,
                                unsigned int transp, struct fb_info *info)
 {
-    unsigned int val;
-    if (regno > 16)
-        { return 1; }
-
-    /* 用red,green,blue三原色构造出val */
-    val  = chan_to_field(red,	&info->var.red);
-    val |= chan_to_field(green, &info->var.green);
-    val |= chan_to_field(blue,	&info->var.blue);
-    //((u32 *)(info->pseudo_palette))[regno] = val;
-    pseudo_palette[regno] = val;
+    unsigned int color = 0;
+	uint32_t *p;	
+	
+	color  = chan_to_field(red,	&info->var.red);
+   	color |= chan_to_field(green, &info->var.green);
+   	color |= chan_to_field(blue, &info->var.blue);
+    
+	p = info->pseudo_palette;  
+    p[regno] = color;
     return 0;
 }
 
@@ -99,39 +104,41 @@ static int lcd_probe(struct platform_device *pdev)
 {
     int ret;
     unsigned int temp;
-    
-	printk("[LCD] %s\n", __func__);	
 
 	/* 1. 分配一个fb_info */
     s3c_lcd = framebuffer_alloc(0, NULL);
-    /* 2. 设置 */
+   
+	 /* 2. 设置 */
     /* 2.1 设置 fix 固定的参数 */
     strcpy(s3c_lcd->fix.id, "s702");
-    s3c_lcd->fix.smem_len = 480 * 800 * 16 / 8;	    //显存的长度
-    s3c_lcd->fix.type     = FB_TYPE_PACKED_PIXELS;	//类型
-    s3c_lcd->fix.visual   = FB_VISUAL_TRUECOLOR; 	//TFT 真彩色
-    s3c_lcd->fix.line_length = 800 * 2;				//一行的长度
+    s3c_lcd->fix.smem_len = LCD_LENTH * LCD_WIDTH * BITS_PER_PIXEL / 8;	    //显存的长度
+    s3c_lcd->fix.type     = FB_TYPE_PACKED_PIXELS;							//类型
+    s3c_lcd->fix.visual   = FB_VISUAL_TRUECOLOR; 							//TFT 真彩色
+    s3c_lcd->fix.line_length = LCD_LENTH * BITS_PER_PIXEL / 8;				//一行的长度
     /* 2.2 设置 var 可变的参数 */
-    s3c_lcd->var.xres           = 800;	//x方向分辨率
-    s3c_lcd->var.yres           = 480;	//y方向分辨率
-    s3c_lcd->var.xres_virtual   = 800;	//x方向虚拟分辨率
-    s3c_lcd->var.yres_virtual   = 480;	//y方向虚拟分辨率
-    s3c_lcd->var.bits_per_pixel = 16;	//每个像素占的bit
-    /* RGB:565 */
-    s3c_lcd->var.red.offset     = 11;	//红
-    s3c_lcd->var.red.length     = 5;
-    s3c_lcd->var.green.offset   = 5;	//绿
-    s3c_lcd->var.green.length   = 6;
+    s3c_lcd->var.xres           = LCD_LENTH;			//x方向分辨率
+    s3c_lcd->var.yres           = LCD_WIDTH;			//y方向分辨率
+    s3c_lcd->var.xres_virtual   = LCD_LENTH;			//x方向虚拟分辨率
+    s3c_lcd->var.yres_virtual   = LCD_WIDTH;			//y方向虚拟分辨率
+    s3c_lcd->var.bits_per_pixel = BITS_PER_PIXEL;		//每个像素占的bit
+    /* RGB:888 */
+    s3c_lcd->var.red.length     = 8;
+	s3c_lcd->var.red.offset     = 16;	//红
+    s3c_lcd->var.green.length   = 8;
+    s3c_lcd->var.green.offset   = 8;	//绿
+    s3c_lcd->var.blue.length    = 8;
     s3c_lcd->var.blue.offset    = 0;	//蓝
-    s3c_lcd->var.blue.length    = 5;
-    s3c_lcd->var.activate       = FB_ACTIVATE_NOW;
+	s3c_lcd->var.activate       = FB_ACTIVATE_NOW;
 	/* 2.3 设置操作函数 */
     s3c_lcd->fbops              = &s3c_lcdfb_ops;
-    /* 2.4 其他的设置 */
-    s3c_lcd->pseudo_palette = pseudo_palette;		//调色板
-    //s3c_lcd->screen_base  = ;  					//显存的虚拟地址,分配显存时填充
-    s3c_lcd->screen_size    = 480 * 800 * 16 / 8;	//显存大小
-    /* 3. 硬件相关的操作 */
+  
+ 	/* 2.4 其他的设置 */
+    s3c_lcd->pseudo_palette 	= pseudo_palette;		//调色板
+    s3c_lcd->screen_size    	= LCD_LENTH * LCD_WIDTH * BITS_PER_PIXEL / 8;	//显存大小
+    
+	
+
+	/* 3. 硬件相关的操作 */
     /* 3.1 配置GPIO用于LCD */
     //设备树中使用"default"
     /* 3.2 根据LCD手册设置LCD控制器, 比如VCLK的频率等 */
@@ -252,7 +259,7 @@ static int lcd_probe(struct platform_device *pdev)
      * Horizontal(水平) display size : 800
      * Vertical(垂直) display size : 480
      */
-    temp = (479 << 11) | 799;
+    temp = ((LCD_WIDTH-1) << 11) | LCD_LENTH;
     writel(temp, lcd_regs_base + VIDTCON2);
     /*
      * WINCON0:
@@ -261,10 +268,11 @@ static int lcd_probe(struct platform_device *pdev)
      * [1]:Enables/disables video output   1 = Enables
      */
     temp = readl(lcd_regs_base + WINCON0);
-    temp |= (1 << 16) | (5 << 2) | 1;
+	temp &= ~(0xf << 2);
+    temp |= (1 << 15) | (0xd << 2) | 1;
     writel(temp, lcd_regs_base + WINCON0);
     //Window Size For example, Height ? Width (number of word)
-    temp = 480 * 800 >> 1;
+    temp = (LCD_LENTH * LCD_WIDTH) >> 1;
     writel(temp, lcd_regs_base + VIDOSD0C);
     temp = readl(lcd_regs_base + SHADOWCON);
     writel(temp | 0x01, lcd_regs_base + SHADOWCON);
@@ -284,20 +292,21 @@ static int lcd_probe(struct platform_device *pdev)
      * bit0-10 : 指定OSD图像右下像素的垂直屏幕坐标
      * bit11-21: 指定OSD图像右下像素的水平屏幕坐标
      */
-    writel((799 << 11) | 479, lcd_regs_base + VIDOSD0B);
-    /* 3.3 分配显存(framebuffer), 并把地址告诉LCD控制器 */
-    // s3c_lcd->screen_base 	显存虚拟地址
-    // s3c_lcd->fix.smem_len 	显存大小，前面计算的
-    // s3c_lcd->fix.smem_start 	显存物理地址
-   	s3c_lcd->screen_base = dma_alloc_writecombine(NULL, s3c_lcd->fix.smem_len, (dma_addr_t *)&s3c_lcd->fix.smem_start, GFP_KERNEL);
-	
-	//显存起始地址
-    writel(s3c_lcd->fix.smem_start, lcd_regs_base + VIDW00ADD0B0);
-    //显存结束地址
-    writel(s3c_lcd->fix.smem_start + s3c_lcd->fix.smem_len, lcd_regs_base + VIDW00ADD1B0);
+    writel(((LCD_LENTH-1) << 11) | (LCD_WIDTH-1), lcd_regs_base + VIDOSD0B);
     //Enables video output and logic immediately
     temp = readl(lcd_regs_base + VIDCON0);
     writel(temp | 0x03, lcd_regs_base + VIDCON0);
+
+	/* 3.3 分配显存(framebuffer), 并把地址告诉LCD控制器 */
+	// s3c_lcd->screen_base 	显存虚拟地址
+	// s3c_lcd->fix.smem_len 	显存大小，前面计算的
+	// s3c_lcd->fix.smem_start 	显存物理地址
+	s3c_lcd->screen_base = dma_alloc_writecombine(NULL, s3c_lcd->fix.smem_len, (dma_addr_t *)&s3c_lcd->fix.smem_start, GFP_KERNEL);
+	
+	//显存起始地址
+	writel(s3c_lcd->fix.smem_start, lcd_regs_base + VIDW00ADD0B0);
+	//显存结束地址
+	writel(s3c_lcd->fix.smem_start + s3c_lcd->fix.smem_len, lcd_regs_base + VIDW00ADD1B0);
 
     /* 4. 注册 */
     ret = register_framebuffer(s3c_lcd);
