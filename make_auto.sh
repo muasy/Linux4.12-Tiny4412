@@ -9,7 +9,7 @@
 echo "###########################################"
 echo "make"
 # All DEBUG(KCFLAGS=-DDEBUG)
-make ARCH=arm uImage LOADADDR=0X40008000 -j4
+make ARCH=arm uImage LOADADDR=0X40008000 -j16
 
 echo "###########################################"
 echo "make dts"
